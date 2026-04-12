@@ -115,7 +115,7 @@ export default function ItemForm({ item, onBack, onSaved }) {
 
   async function handleSubmit(e) {
     e.preventDefault()
-    if (!form.name.trim()) { setError('Bitte Titel eingeben.'); return }
+    // titel optional
     setSaving(true); setError('')
 
     try {
@@ -202,7 +202,7 @@ export default function ItemForm({ item, onBack, onSaved }) {
         <div style={styles.section}>
           <label style={styles.label}>Titel *</label>
           <input style={styles.input} type="text" placeholder="z. B. Kinderwagen Bugaboo Fox, wie neu"
-            value={form.name} onChange={e => set('name', e.target.value)} required />
+            value={form.name} onChange={e => set('name', e.target.value)} />
         </div>
 
         {/* Beschreibung + KI */}
