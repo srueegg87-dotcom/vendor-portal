@@ -58,7 +58,7 @@ export default function ItemForm({ item, onBack, onSaved }) {
   }
 
   async function generateWithGemini() {
-    if (!form.name.trim()) return
+    // no block
     setAiLoading(true)
     try {
       // Erstes neues Foto als Base64 mitsenden falls vorhanden
@@ -157,7 +157,7 @@ export default function ItemForm({ item, onBack, onSaved }) {
     }
   }
 
-  const canAi = form.name.trim().length > 2
+  const canAi = photos.some(p => !p.existing) || form.name.trim().length > 2
 
   return (
     <div style={styles.page}>
