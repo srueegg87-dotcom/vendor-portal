@@ -2,7 +2,6 @@ import { useState, useEffect } from 'react'
 import { supabase } from './supabaseClient'
 import { useAuth } from './AuthContext'
 
-const GEMINI_KEY = import.meta.env.VITE_GEMINI_API_KEY
 const SUPABASE_URL = 'https://quhqhqhfyzqknnoldyke.supabase.co'
 
 const CATEGORIES = [
@@ -59,44 +58,37 @@ export default function ItemForm({ item, onBack, onSaved }) {
   }
 
   async function generateWithGemini() {
-    if (!form.name && photos.length === 0) return
+    if (!form.name.trim()) return
     setAiLoading(true)
     try {
-      const parts = []
-      if (form.name) parts.push({ text: `Artikelname: ${form.name}` })
-      if (form.category) parts.push({ text: `Kategorie: ${form.category}` })
-
-      // Erstes Foto als Base64 mitsenden falls vorhanden
+      // Erstes neues Foto als Base64 mitsenden falls vorhanden
+      let imageBase64 = null
+      let mimeType = null
       const firstNew = photos.find(p => !p.existing && p.file)
       if (firstNew) {
-        const base64 = await fileToBase64(firstNew.file)
-        parts.push({ inline_data: { mime_type: firstNew.file.type, data: base64 } })
+        imageBase64 = await fileToBase64(firstNew.file)
+        mimeType = firstNew.file.type
       }
 
-      parts.push({
-        text: `Schreibe eine kurze, ansprechende Produktbeschreibung auf Deutsch für ein Secondhand-Inserat auf Rüegg's Familienbörse (Schweiz). 
-Max. 3-4 Sätze. Erwähne Zustand, Eignung und einen freundlichen Aufruf zur Kontaktaufnahme. 
-Kein "Ich verkaufe". Direkt und persönlich. Nur die Beschreibung, kein Titel.`
+      const res = await fetch('/api/generate-description', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          title: form.name,
+          category: form.category,
+          imageBase64,
+          mimeType
+        })
       })
-
-      const res = await fetch(
-        `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${GEMINI_KEY}`,
-        {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ contents: [{ parts }] })
-        }
-      )
       const data = await res.json()
-      const text = data?.candidates?.[0]?.content?.parts?.[0]?.text
-      if (text) set('description', text.trim())
+      if (data.description) set('description', data.description)
+      else console.error('API error:', data.error)
     } catch (e) {
-      console.error(e)
+      console.error('Generate error:', e)
     } finally {
       setAiLoading(false)
     }
   }
-
   function fileToBase64(file) {
     return new Promise((res, rej) => {
       const reader = new FileReader()
@@ -165,7 +157,7 @@ Kein "Ich verkaufe". Direkt und persönlich. Nur die Beschreibung, kein Titel.`
     }
   }
 
-  const canAi = form.name.length > 2 || photos.some(p => !p.existing)
+  const canAi = form.name.trim().length > 2
 
   return (
     <div style={styles.page}>
