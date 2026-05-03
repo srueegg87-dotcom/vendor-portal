@@ -32,13 +32,6 @@ export function AuthProvider({ children }) {
     setLoading(false)
   }
 
-  async function signUp(email, password, name) {
-    return supabase.auth.signUp({
-      email, password,
-      options: { data: { name } }
-    })
-  }
-
   async function signIn(email, password) {
     return supabase.auth.signInWithPassword({ email, password })
   }
@@ -47,8 +40,17 @@ export function AuthProvider({ children }) {
     await supabase.auth.signOut()
   }
 
+  async function updatePassword(newPassword) {
+    return supabase.auth.updateUser({ password: newPassword })
+  }
+
+  async function requestPasswordReset(email) {
+    const redirectTo = `${window.location.origin}/`
+    return supabase.auth.resetPasswordForEmail(email, { redirectTo })
+  }
+
   return (
-    <AuthContext.Provider value={{ user, vendor, loading, signUp, signIn, signOut, fetchVendor }}>
+    <AuthContext.Provider value={{ user, vendor, loading, signIn, signOut, fetchVendor, updatePassword, requestPasswordReset }}>
       {children}
     </AuthContext.Provider>
   )
