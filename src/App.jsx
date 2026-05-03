@@ -1,6 +1,7 @@
 import { useState } from 'react'
 import { AuthProvider, useAuth } from './AuthContext'
 import AuthPage from './AuthPage'
+import SetPasswordPage from './SetPasswordPage'
 import Dashboard from './Dashboard'
 import ItemForm from './ItemForm'
 
@@ -15,8 +16,15 @@ function AppInner() {
     </div>
   )
 
+  // 1. Nicht eingeloggt -> Login/Forgot/Invite-Page
   if (!user) return <AuthPage />
 
+  // 2. Eingeloggt, aber Passwort noch nicht gesetzt (z.B. nach Invite)
+  //    -> Erzwinge Passwort-Setzen, bevor Dashboard freigegeben wird
+  const passwordSet = user.user_metadata?.password_set === true
+  if (!passwordSet) return <SetPasswordPage />
+
+  // 3. Normaler Flow
   if (view === 'new') return (
     <ItemForm
       item={null}
@@ -24,7 +32,6 @@ function AppInner() {
       onSaved={() => setView('dashboard')}
     />
   )
-
   if (view === 'edit') return (
     <ItemForm
       item={editItem}
@@ -32,7 +39,6 @@ function AppInner() {
       onSaved={() => setView('dashboard')}
     />
   )
-
   return (
     <Dashboard
       onNewItem={() => setView('new')}
