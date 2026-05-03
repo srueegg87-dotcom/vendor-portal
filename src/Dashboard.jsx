@@ -11,9 +11,25 @@ const STATUS_COLOR = {
   archived:{ bg: '#F1EFE8', color: '#444441' },
 }
 
+// Frist je Kategorie (Monate)
+function fristMonate(category) {
+  const c = (category || '').toLowerCase()
+  if (c.includes('spielzeug')) return 6
+  return 3
+}
+
 function daysSince(dateStr) {
   if (!dateStr) return 0
   return Math.floor((Date.now() - new Date(dateStr).getTime()) / (1000 * 60 * 60 * 24))
+}
+
+function tageBisAblauf(item) {
+  const start = new Date(item.added || item.created_at)
+  const monate = fristMonate(item.category)
+  const ablauf = new Date(start)
+  ablauf.setMonth(ablauf.getMonth() + monate)
+  const diff = Math.floor((ablauf.getTime() - Date.now()) / (1000 * 60 * 60 * 24))
+  return diff
 }
 
 function formatCHF(val) {
@@ -49,6 +65,7 @@ export default function Dashboard({ onNewItem, onEditItem }) {
   }
 
   const commission = vendor?.commission || 30
+  const regelung   = vendor?.rueckgabe_regelung || null
   const activeItems  = items.filter(i => i.status === 'active')
   const soldItems    = items.filter(i => i.status === 'sold')
   const pendingItems = items.filter(i => i.status === 'pending')
@@ -57,16 +74,17 @@ export default function Dashboard({ onNewItem, onEditItem }) {
   const auszahlungOffen = soldItems.reduce((s, i) => s + Number(i.cost || 0) * (1 - commission / 100), 0)
   const lagerwert       = activeItems.reduce((s, i) => s + Number(i.cost || 0), 0)
 
-  const abholenBald  = activeItems.filter(i => { const d = daysSince(i.added || i.created_at); return d >= 75 && d < 90 })
-  const abholenJetzt = activeItems.filter(i => { const d = daysSince(i.added || i.created_at); return d >= 90 && d < 180 })
-  const verfallen    = activeItems.filter(i => daysSince(i.added || i.created_at) >= 180)
+  // Abholfristen-Berechnung dynamisch je Kategorie
+  const abholenBald  = activeItems.filter(i => { const d = tageBisAblauf(i); return d > 0 && d <= 14 })
+  const abholenJetzt = activeItems.filter(i => { const d = tageBisAblauf(i); return d <= 0 && d > -28 })
+  const verfallen    = activeItems.filter(i => tageBisAblauf(i) <= -28)
   const pickupItems  = [...verfallen, ...abholenJetzt, ...abholenBald]
 
   function pickupBadge(item) {
-    const d = daysSince(item.added || item.created_at)
-    if (d >= 180) return { label: 'Geht an Familienbörse', bg: '#FCEBEB', color: '#791F1F' }
-    if (d >= 90)  return { label: `Abholen! (${d} Tage)`, bg: '#FAEEDA', color: '#633806' }
-    return               { label: `Bald abholen (${d} Tage)`, bg: '#FFF9E6', color: '#856B00' }
+    const d = tageBisAblauf(item)
+    if (d <= -28) return { label: 'Geht an Familienbörse', bg: '#FCEBEB', color: '#791F1F' }
+    if (d <= 0)   return { label: `Frist abgelaufen (${Math.abs(d)} Tage)`, bg: '#FAEEDA', color: '#633806' }
+    return              { label: `Bald abholen (${d} Tage)`, bg: '#FFF9E6', color: '#856B00' }
   }
 
   const filtered = tab === 'all' ? items
@@ -147,7 +165,7 @@ export default function Dashboard({ onNewItem, onEditItem }) {
                         </div>
                         <div style={s.itemInfo}>
                           <div style={s.itemName}>{item.name}</div>
-                          <div style={s.itemMeta}>{formatCHF(item.cost)}</div>
+                          <div style={s.itemMeta}>{formatCHF(item.cost)} · {item.category || '–'} · {fristMonate(item.category)} Mt.</div>
                         </div>
                         <span style={{ ...s.badge, background: badge.bg, color: badge.color, whiteSpace: 'nowrap' }}>
                           {badge.label}
@@ -159,17 +177,55 @@ export default function Dashboard({ onNewItem, onEditItem }) {
               </div>
             )}
 
-            <div style={s.infoBox}>
-              <div style={s.infoTitle}>Abholregeln</div>
-              <div style={s.infoRow}>
-                <div style={{ ...s.infoDot, background: '#FAEEDA', border: '1px solid #EF9F27' }} />
-                <span>Nach <strong>3 Monaten</strong> müssen Artikel abgeholt werden</span>
+            {/* === Dynamische Abholregeln je Lieferant === */}
+            {regelung === null && (
+              <div style={{ ...s.infoBox, borderColor: '#EF9F27', background: '#FFF9E6' }}>
+                <div style={{ ...s.infoTitle, color: '#856B00' }}>⚠️ Abholregeln noch nicht festgelegt</div>
+                <div style={{ fontSize: 13, color: '#555', lineHeight: 1.5 }}>
+                  Bitte kontaktiere den Shop (Tel. 076 200 90 04 oder info@familienbörse.ch),
+                  damit deine bevorzugte Regelung bei Ablauf der Frist hinterlegt wird (Spenden oder Rückgabe).
+                </div>
               </div>
-              <div style={s.infoRow}>
-                <div style={{ ...s.infoDot, background: '#FCEBEB', border: '1px solid #E24B4A' }} />
-                <span>Nach <strong>6 Monaten</strong> gehen Artikel an Rüegg's Familienbörse</span>
+            )}
+
+            {regelung === 'spenden' && (
+              <div style={s.infoBox}>
+                <div style={s.infoTitle}>Abholregeln · <span style={{ color: '#0F6E56', fontWeight: 600 }}>Spenden</span></div>
+                <div style={s.infoRow}>
+                  <div style={{ ...s.infoDot, background: '#E1F5EE', border: '1px solid #5DCAA5' }} />
+                  <span>Frist: <strong>3 Monate</strong> für die meisten Artikel, <strong>6 Monate</strong> für Spielzeug</span>
+                </div>
+                <div style={s.infoRow}>
+                  <div style={{ ...s.infoDot, background: '#E6F1FB', border: '1px solid #6BA9DD' }} />
+                  <span>Nach Ablauf gehen deine Artikel <strong>als Spende</strong> an Rüegg's Familienbörse</span>
+                </div>
+                <div style={{ fontSize: 12, color: '#888', marginTop: 8, paddingTop: 8, borderTop: '1px dashed #e0ddd5' }}>
+                  Du erhältst keine Erinnerungs-Mails – einfach laufen lassen.
+                </div>
               </div>
-            </div>
+            )}
+
+            {regelung === 'rueckgabe' && (
+              <div style={s.infoBox}>
+                <div style={s.infoTitle}>Abholregeln · <span style={{ color: '#856B00', fontWeight: 600 }}>Rückgabe</span></div>
+                <div style={s.infoRow}>
+                  <div style={{ ...s.infoDot, background: '#E1F5EE', border: '1px solid #5DCAA5' }} />
+                  <span>Frist: <strong>3 Monate</strong> für die meisten Artikel, <strong>6 Monate</strong> für Spielzeug</span>
+                </div>
+                <div style={s.infoRow}>
+                  <div style={{ ...s.infoDot, background: '#FAEEDA', border: '1px solid #EF9F27' }} />
+                  <span>Bei Ablauf erhältst du eine <strong>Erinnerung per E-Mail</strong></span>
+                </div>
+                <div style={s.infoRow}>
+                  <div style={{ ...s.infoDot, background: '#FFF9E6', border: '1px solid #D4B600' }} />
+                  <span>Du hast dann <strong>4 Wochen Zeit</strong>, deine Artikel im Laden abzuholen</span>
+                </div>
+                <div style={s.infoRow}>
+                  <div style={{ ...s.infoDot, background: '#FCEBEB', border: '1px solid #E24B4A' }} />
+                  <span>Werden Artikel nicht abgeholt, gehen sie an die <strong>Familienbörse über</strong></span>
+                </div>
+              </div>
+            )}
 
             {items.length > 0 && (
               <div style={s.section}>
@@ -211,7 +267,10 @@ export default function Dashboard({ onNewItem, onEditItem }) {
                 {filtered.map(item => {
                   const thumb = getThumb(item)
                   const sc = STATUS_COLOR[item.status] || STATUS_COLOR.pending
-                  const d = daysSince(item.added || item.created_at)
+                  const tageRest = tageBisAblauf(item)
+                  const fristInfo = item.status === 'active'
+                    ? (tageRest > 0 ? `noch ${tageRest} Tage` : `Frist abgelaufen`)
+                    : `${daysSince(item.added || item.created_at)} Tage im Lager`
                   return (
                     <div key={item.id} style={s.itemCard} onClick={() => onEditItem(item)}>
                       <div style={s.thumb}>
@@ -219,7 +278,7 @@ export default function Dashboard({ onNewItem, onEditItem }) {
                       </div>
                       <div style={s.itemInfo}>
                         <div style={s.itemName}>{item.name}</div>
-                        <div style={s.itemMeta}>{item.category || '–'} · {d} Tage im Lager</div>
+                        <div style={s.itemMeta}>{item.category || '–'} · {fristInfo}</div>
                       </div>
                       <div style={{ textAlign: 'right', display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: 4 }}>
                         <div style={s.price}>{formatCHF(item.cost)}</div>
