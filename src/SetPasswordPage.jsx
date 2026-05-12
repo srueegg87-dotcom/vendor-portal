@@ -7,6 +7,8 @@ export default function SetPasswordPage({ mode = 'invite' }) {
   const [form, setForm] = useState({ password: '', password2: '' })
   const [error, setError] = useState('')
   const [loading, setLoading] = useState(false)
+  const [show, setShow] = useState(false)
+  const [show2, setShow2] = useState(false)
 
   const set = (k, v) => setForm(f => ({ ...f, [k]: v }))
   const isRecovery = mode === 'recovery'
@@ -63,13 +65,23 @@ export default function SetPasswordPage({ mode = 'invite' }) {
         <form onSubmit={handleSubmit}>
           <div style={styles.field}>
             <label style={styles.label}>Neues Passwort</label>
-            <input style={styles.input} type="password" placeholder="mind. 6 Zeichen" value={form.password}
-              onChange={e => set('password', e.target.value)} required minLength={6} autoFocus />
+            <div style={styles.inputWrap}>
+              <input style={{ ...styles.input, paddingRight: 40 }} type={show ? 'text' : 'password'} placeholder="mind. 6 Zeichen" value={form.password}
+                onChange={e => set('password', e.target.value)} required minLength={6} autoFocus />
+              <button type="button" style={styles.eye} onClick={() => setShow(s => !s)} aria-label={show ? 'Passwort verbergen' : 'Passwort anzeigen'}>
+                {show ? '🙈' : '👁️'}
+              </button>
+            </div>
           </div>
           <div style={styles.field}>
             <label style={styles.label}>Passwort bestätigen</label>
-            <input style={styles.input} type="password" placeholder="nochmal dasselbe Passwort" value={form.password2}
-              onChange={e => set('password2', e.target.value)} required minLength={6} />
+            <div style={styles.inputWrap}>
+              <input style={{ ...styles.input, paddingRight: 40 }} type={show2 ? 'text' : 'password'} placeholder="nochmal dasselbe Passwort" value={form.password2}
+                onChange={e => set('password2', e.target.value)} required minLength={6} />
+              <button type="button" style={styles.eye} onClick={() => setShow2(s => !s)} aria-label={show2 ? 'Passwort verbergen' : 'Passwort anzeigen'}>
+                {show2 ? '🙈' : '👁️'}
+              </button>
+            </div>
           </div>
           {error && <p style={styles.error}>{error}</p>}
           <button style={styles.btnPrimary} type="submit" disabled={loading}>
@@ -99,6 +111,8 @@ const styles = {
   field: { marginBottom: '0.875rem' },
   label: { display: 'block', fontSize: 13, color: '#666', marginBottom: 5 },
   input: { width: '100%', padding: '10px 12px', border: '0.5px solid #ccc', borderRadius: 8, fontSize: 14, boxSizing: 'border-box', outline: 'none' },
+  inputWrap: { position: 'relative' },
+  eye: { position: 'absolute', right: 6, top: '50%', transform: 'translateY(-50%)', background: 'none', border: 'none', cursor: 'pointer', padding: '4px 8px', fontSize: 16, lineHeight: 1, color: '#888' },
   error: { color: '#c0392b', fontSize: 13, marginBottom: 10 },
   btnPrimary: { width: '100%', padding: 11, background: '#0F6E56', color: '#fff', border: 'none', borderRadius: 8, fontSize: 14, fontWeight: 500, cursor: 'pointer', marginTop: 4 },
   toggle: { textAlign: 'center', marginTop: '1rem', fontSize: 13, color: '#888' },
