@@ -2,6 +2,10 @@ import { useState } from 'react'
 import { useAuth } from './AuthContext'
 import { supabase } from './supabaseClient'
 
+// Wenn der GB-Text inhaltlich geändert wird, dieses Datum hochsetzen.
+// Lieferanten, deren gb_stand davon abweicht, müssen erneut bestätigen.
+export const GB_STAND = '2026-01-01'
+
 export default function ConsentPage() {
   const { vendor, fetchVendor, user, signOut } = useAuth()
   const [agreed, setAgreed] = useState(false)
@@ -22,6 +26,7 @@ export default function ConsentPage() {
         .update({
           gb_akzeptiert: true,
           gb_akzeptiert_am: new Date().toISOString(),
+          gb_stand: GB_STAND,
           entsorgung_ok: entsorgung,
           rueckgabe_regelung: rueckgabe,
         })
@@ -51,17 +56,40 @@ export default function ConsentPage() {
           <h3 style={s.gbHead}>Annahme</h3>
           <ul style={s.gbList}>
             <li>Wir nehmen <b>saisonale, saubere, flecken- und löcherfreie</b> Kleidung, Schuhe und Spielzeug an.</li>
-            <li>Spiele und Puzzles bitte nur vollständig.</li>
+            <li>Spiele und Puzzles bitte nur vollständig und in unbeschädigtem Zustand.</li>
             <li>Voranmeldung ab 5 Artikeln. Keine Annahme an Samstagen und in den Schulferien.</li>
+          </ul>
+
+          <h3 style={s.gbHead}>Verkauf &amp; Preise</h3>
+          <ul style={s.gbList}>
+            <li>Der Verkaufspreis wird durch Rüegg's Familienbörse festgelegt.</li>
+            <li>Verkauf gegen Barzahlung, TWINT oder Kreditkarte.</li>
+            <li>Nachträgliche Preisänderungen: <b>CHF 1.–</b> bis CHF 49.–, ab CHF 50.– sind es <b>CHF 5.–</b> pro Artikel.</li>
           </ul>
 
           <h3 style={s.gbHead}>Provision &amp; Fristen</h3>
           <ul style={s.gbList}>
-            <li>Bei Kommissionsverkauf erhältst du deinen vereinbarten Anteil; die Familienbörse behält die abgemachte Provision ein.</li>
-            <li>Verkaufsfrist: <b>Spielzeug 6 Monate</b>, Kleidung &amp; Schuhe <b>3 Monate</b> ab Anlieferung.</li>
-            <li>Nach Fristablauf hast du je nach Wahl ca. 4 Wochen Zeit, deine Sachen wieder abzuholen.</li>
-            <li>Bei kostenpflichtiger Rückgabe: <b>CHF 1.– pro Artikel</b> Rückgabegebühr.</li>
+            <li>Bei Kommissionsverkauf erhältst du deinen vereinbarten Anteil; die Familienbörse behält die Provision ein.</li>
+            <li>Verkaufsfrist gemäss Lieferbeleg <b>(in der Regel 3 Monate)</b>.</li>
+            <li>Auszahlung erst <b>einen Monat nach Verkauf</b> und nur gegen Original-Lieferbeleg.</li>
+            <li>Sämtliche Ansprüche erlöschen <b>12 Monate</b> nach Lieferdatum.</li>
+            <li>Abrechnung bitte mindestens <b>5 Tage vor Erscheinen</b> melden.</li>
           </ul>
+
+          <h3 style={s.gbHead}>Rückgabe &amp; Spende</h3>
+          <ul style={s.gbList}>
+            <li>Kostenpflichtige Rückgabe nach Fristablauf: <b>CHF 1.– pro Artikel</b>.</li>
+            <li>Nicht abgeholte Artikel werden an eine wohltätige Organisation (z.&nbsp;B. Endlesslife) gespendet.</li>
+            <li>Für sperrige &amp; grosse Artikel verlangen wir ein <b>Depot von CHF 20.–</b> (Nichtabholung → Entsorgung; sonst Verrechnung bei Auszahlung).</li>
+          </ul>
+
+          <h3 style={s.gbHead}>Haftung</h3>
+          <ul style={s.gbList}>
+            <li>Für alle in Kommission genommenen Artikel lehnt Rüegg's Familienbörse jegliche Haftung ab — auch bei Brand, Hochwasser, Diebstahl oder Einbruchdiebstahl.</li>
+            <li>Der Artikelbesitzer haftet selbst für die gebrachten Artikel; für versteckte Mängel wird keine Haftung übernommen.</li>
+          </ul>
+
+          <p style={s.gbStand}>Stand: 01.01.2026 · Rüegg's Familienbörse, Gommiswald</p>
         </div>
 
         <form onSubmit={handleSubmit}>
@@ -124,6 +152,7 @@ const s = {
   gbBox: { background: '#f5f4f0', borderRadius: 12, padding: '1rem 1.25rem', marginBottom: '1.25rem', fontSize: 13, lineHeight: 1.65 },
   gbHead: { fontSize: 13, fontWeight: 600, color: '#0F6E56', marginTop: '0.75rem', marginBottom: '0.4rem', textTransform: 'uppercase', letterSpacing: '.05em' },
   gbList: { margin: 0, paddingLeft: '1.1rem', color: '#444' },
+  gbStand: { marginTop: '1rem', paddingTop: '0.75rem', borderTop: '1px dashed #d8d4c8', fontSize: 11, color: '#888', textAlign: 'right', fontStyle: 'italic' },
   option: { display: 'flex', gap: 10, alignItems: 'flex-start', padding: '12px 14px', border: '0.5px solid #ccc', borderRadius: 10, marginBottom: 10, cursor: 'pointer', fontSize: 14, lineHeight: 1.4 },
   optionActive: { borderColor: '#0F6E56', background: '#E1F5EE' },
   cb: { marginTop: 3, flexShrink: 0, accentColor: '#0F6E56' },
