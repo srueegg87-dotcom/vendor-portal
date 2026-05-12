@@ -72,7 +72,7 @@ export default function ConsentPage() {
             <li>Bei Kommissionsverkauf erhältst du deinen vereinbarten Anteil; die Familienbörse behält die Provision ein.</li>
             <li>Verkaufsfrist gemäss Lieferbeleg <b>(in der Regel 3 Monate)</b>.</li>
             <li>Auszahlung erst <b>einen Monat nach Verkauf</b> und nur gegen Original-Lieferbeleg.</li>
-            <li>Sämtliche Ansprüche erlöschen <b>12 Monate</b> nach Lieferdatum.</li>
+            <li>Sämtliche Ansprüche auf Guthaben erlöschen <b>12 Monate</b> nach Lieferdatum.</li>
             <li>Abrechnung bitte mindestens <b>5 Tage vor Erscheinen</b> melden.</li>
           </ul>
 
