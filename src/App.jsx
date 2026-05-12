@@ -2,11 +2,12 @@ import { useState } from 'react'
 import { AuthProvider, useAuth } from './AuthContext'
 import AuthPage from './AuthPage'
 import SetPasswordPage from './SetPasswordPage'
+import ConsentPage from './ConsentPage'
 import Dashboard from './Dashboard'
 import ItemForm from './ItemForm'
 
 function AppInner() {
-  const { user, loading, recoveryMode } = useAuth()
+  const { user, vendor, loading, recoveryMode } = useAuth()
   const [view, setView] = useState('dashboard') // dashboard | new | edit
   const [editItem, setEditItem] = useState(null)
 
@@ -25,6 +26,9 @@ function AppInner() {
   // 3. Eingeloggt, aber Passwort noch nicht gesetzt (z.B. nach Invite)
   const passwordSet = user.user_metadata?.password_set === true
   if (!passwordSet) return <SetPasswordPage mode="invite" />
+
+  // 4. Geschäftsbedingungen noch nicht digital bestätigt
+  if (vendor && vendor.gb_akzeptiert !== true) return <ConsentPage />
 
   // 3. Normaler Flow
   if (view === 'new') return (
