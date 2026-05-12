@@ -6,7 +6,7 @@ import Dashboard from './Dashboard'
 import ItemForm from './ItemForm'
 
 function AppInner() {
-  const { user, loading } = useAuth()
+  const { user, loading, recoveryMode } = useAuth()
   const [view, setView] = useState('dashboard') // dashboard | new | edit
   const [editItem, setEditItem] = useState(null)
 
@@ -19,10 +19,12 @@ function AppInner() {
   // 1. Nicht eingeloggt -> Login/Forgot/Invite-Page
   if (!user) return <AuthPage />
 
-  // 2. Eingeloggt, aber Passwort noch nicht gesetzt (z.B. nach Invite)
-  //    -> Erzwinge Passwort-Setzen, bevor Dashboard freigegeben wird
+  // 2. Recovery-Link aus E-Mail -> Passwort-Setzen erzwingen, egal ob password_set bereits true ist
+  if (recoveryMode) return <SetPasswordPage mode="recovery" />
+
+  // 3. Eingeloggt, aber Passwort noch nicht gesetzt (z.B. nach Invite)
   const passwordSet = user.user_metadata?.password_set === true
-  if (!passwordSet) return <SetPasswordPage />
+  if (!passwordSet) return <SetPasswordPage mode="invite" />
 
   // 3. Normaler Flow
   if (view === 'new') return (

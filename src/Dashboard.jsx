@@ -41,6 +41,7 @@ export default function Dashboard({ onNewItem, onEditItem }) {
   const [items, setItems] = useState([])
   const [loading, setLoading] = useState(true)
   const [tab, setTab] = useState('overview')
+  const [showPwModal, setShowPwModal] = useState(false)
 
   useEffect(() => { if (vendor) fetchItems() }, [vendor])
 
@@ -102,9 +103,11 @@ export default function Dashboard({ onNewItem, onEditItem }) {
         </div>
         <div style={{ display: 'flex', gap: 8 }}>
           <button style={s.btnNew} onClick={onNewItem}>+ Neues Inserat</button>
+          <button style={s.btnOut} onClick={() => setShowPwModal(true)}>🔒 Passwort</button>
           <button style={s.btnOut} onClick={signOut}>Abmelden</button>
         </div>
       </div>
+      {showPwModal && <ChangePasswordModal onClose={() => setShowPwModal(false)} />}
 
       <div style={s.content}>
         <div style={s.tabs}>
@@ -296,6 +299,75 @@ export default function Dashboard({ onNewItem, onEditItem }) {
       </div>
     </div>
   )
+}
+
+function ChangePasswordModal({ onClose }) {
+  const [pw, setPw] = useState('')
+  const [pw2, setPw2] = useState('')
+  const [error, setError] = useState('')
+  const [success, setSuccess] = useState(false)
+  const [loading, setLoading] = useState(false)
+
+  async function handleSubmit(e) {
+    e.preventDefault()
+    setError('')
+    if (pw.length < 6) { setError('Passwort muss mindestens 6 Zeichen lang sein.'); return }
+    if (pw !== pw2) { setError('Passwörter stimmen nicht überein.'); return }
+    setLoading(true)
+    try {
+      const { error } = await supabase.auth.updateUser({ password: pw })
+      if (error) setError(error.message)
+      else {
+        setSuccess(true)
+        setTimeout(onClose, 1400)
+      }
+    } finally { setLoading(false) }
+  }
+
+  return (
+    <div style={pwStyles.overlay} onClick={onClose}>
+      <div style={pwStyles.modal} onClick={e => e.stopPropagation()}>
+        <div style={pwStyles.head}>
+          <h3 style={pwStyles.title}>Passwort ändern</h3>
+          <button style={pwStyles.close} onClick={onClose}>×</button>
+        </div>
+        {success ? (
+          <div style={pwStyles.success}>✓ Passwort wurde geändert.</div>
+        ) : (
+          <form onSubmit={handleSubmit}>
+            <div style={pwStyles.field}>
+              <label style={pwStyles.label}>Neues Passwort</label>
+              <input style={pwStyles.input} type="password" value={pw} onChange={e => setPw(e.target.value)}
+                placeholder="mind. 6 Zeichen" required minLength={6} autoFocus />
+            </div>
+            <div style={pwStyles.field}>
+              <label style={pwStyles.label}>Passwort bestätigen</label>
+              <input style={pwStyles.input} type="password" value={pw2} onChange={e => setPw2(e.target.value)}
+                placeholder="nochmal dasselbe" required minLength={6} />
+            </div>
+            {error && <p style={pwStyles.error}>{error}</p>}
+            <button style={pwStyles.btnPrimary} type="submit" disabled={loading}>
+              {loading ? 'Speichert...' : 'Passwort speichern'}
+            </button>
+          </form>
+        )}
+      </div>
+    </div>
+  )
+}
+
+const pwStyles = {
+  overlay: { position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.4)', zIndex: 100, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 16 },
+  modal: { background: '#fff', borderRadius: 16, padding: '1.5rem', width: '100%', maxWidth: 380, boxShadow: '0 12px 40px rgba(0,0,0,0.15)' },
+  head: { display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1rem' },
+  title: { margin: 0, fontSize: 18, fontWeight: 500 },
+  close: { background: 'none', border: 'none', fontSize: 24, color: '#888', cursor: 'pointer', lineHeight: 1, padding: 0 },
+  field: { marginBottom: '0.875rem' },
+  label: { display: 'block', fontSize: 13, color: '#666', marginBottom: 5 },
+  input: { width: '100%', padding: '10px 12px', border: '0.5px solid #ccc', borderRadius: 8, fontSize: 14, boxSizing: 'border-box', outline: 'none' },
+  error: { color: '#c0392b', fontSize: 13, margin: '0 0 10px' },
+  success: { background: '#E1F5EE', color: '#085041', padding: '14px 16px', borderRadius: 8, fontSize: 14, textAlign: 'center', fontWeight: 500 },
+  btnPrimary: { width: '100%', padding: 11, background: '#0F6E56', color: '#fff', border: 'none', borderRadius: 8, fontSize: 14, fontWeight: 500, cursor: 'pointer', marginTop: 4 },
 }
 
 const s = {

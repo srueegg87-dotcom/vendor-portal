@@ -2,13 +2,14 @@ import { useState } from 'react'
 import { useAuth } from './AuthContext'
 import { supabase } from './supabaseClient'
 
-export default function SetPasswordPage() {
-  const { user, signOut } = useAuth()
+export default function SetPasswordPage({ mode = 'invite' }) {
+  const { user, signOut, clearRecoveryMode } = useAuth()
   const [form, setForm] = useState({ password: '', password2: '' })
   const [error, setError] = useState('')
   const [loading, setLoading] = useState(false)
 
   const set = (k, v) => setForm(f => ({ ...f, [k]: v }))
+  const isRecovery = mode === 'recovery'
 
   async function handleSubmit(e) {
     e.preventDefault()
@@ -24,9 +25,12 @@ export default function SetPasswordPage() {
       if (error) {
         setError(error.message)
       } else {
-        // Session refreshen, damit user_metadata.password_set sofort verfügbar ist
+        if (isRecovery && clearRecoveryMode) clearRecoveryMode()
+        // Hash entfernen, damit ein Reload nicht erneut in den Recovery-Mode fällt
+        if (typeof window !== 'undefined' && window.location.hash) {
+          window.history.replaceState(null, '', window.location.pathname + window.location.search)
+        }
         await supabase.auth.refreshSession()
-        // Hard reload, damit AuthContext frische User-Metadaten lädt
         window.location.reload()
       }
     } finally {
@@ -42,9 +46,11 @@ export default function SetPasswordPage() {
           <div style={styles.logoSub}>Verkäufer-Portal</div>
         </div>
 
-        <h2 style={styles.title}>Willkommen!</h2>
+        <h2 style={styles.title}>{isRecovery ? 'Neues Passwort setzen' : 'Willkommen!'}</h2>
         <p style={styles.sub}>
-          Bevor du loslegst, setze bitte dein Passwort. Damit kannst du dich künftig anmelden.
+          {isRecovery
+            ? 'Wähle hier ein neues Passwort für dein Konto.'
+            : 'Bevor du loslegst, setze bitte dein Passwort. Damit kannst du dich künftig anmelden.'}
         </p>
 
         {user?.email && (
